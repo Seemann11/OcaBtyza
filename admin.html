@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Панель администратора — РЖДЭкспресс</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://googleapis.com">
+<link rel="preconnect" href="https://gstatic.com" crossorigin>
+<link href="https://googleapis.com" rel="stylesheet">
+<script>
+// ЗАЩИТА: Доступ только для администратора (проверяем роль в localStorage)
+if (localStorage.getItem('user_session_active') !== 'true' || localStorage.getItem('user_role') !== 'admin') {
+    alert('Доступ запрещен. Эта страница только для администраторов.');
+    window.location.replace('auth.html');
+}
+</script>
+<style>
+.admin-layout { margin-top: 40px; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.admin-table-card { background-color: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border-color); padding: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); }
+.admin-table { width: 100%; border-collapse: collapse; text-align: left; }
+.admin-table th, .admin-table td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); font-size: 15px; }
+.admin-table th { background-color: #fafafa; font-weight: 600; color: var(--text-muted); }
+.admin-table tr:hover { background-color: #fcfcfc; }
+.action-btn-group { display: flex; gap: 8px; }
+.edit-btn { background-color: var(--secondary); color: var(--primary); border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+.edit-btn:hover { background-color: var(--primary); color: #fff; }
+.delete-btn { background: none; border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+.delete-btn:hover { background-color: #fce8e6; color: #d93025; border-color: #fad2cf; }
+
+/* Стили для модального окна добавления/редактирования */
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
+.modal.show { display: flex; }
+.modal-content { background: var(--card-bg); padding: 30px; border-radius: var(--radius); width: 100%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+.modal-content h2 { margin-bottom: 20px; font-size: 20px; }
+.modal-form { display: flex; flex-direction: column; gap: 15px; }
+.modal-form .input-group input { height: 45px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+.cancel-btn { background: none; border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- Навигация -->
+<header class="header">
+<div class="container header-container">
+<a href="index.html" class="logo">РЖД<span>Экспресс (Админ)</span></a>
+<nav class="nav">
+<a href="#" class="nav-link active">Управление рейсами</a>
+<button id="logout-btn" class="edit-btn" style="background-color: transparent;">Выйти</button>
+</nav>
+</div>
+</header>
+
+<main class="main container">
+<div class="admin-layout">
+    <div class="admin-header">
+        <h1>Управление расписанием рейсов</h1>
+        <button class="submit-btn" id="add-route-btn">+ Добавить рейс</button>
+    </div>
+
+    <div class="admin-table-card">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Поезд / Номер</th>
+                    <th>Отправление</th>
+                    <th>Прибытие</th>
+                    <th>В пути</th>
+                    <th>Цена (₽)</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody id="admin-routes-tbody">
+                <!-- Сюда JS выведет поезда -->
+            </tbody>
+        </table>
+    </div>
+</div>
+</main>
+
+<!-- Модальное окно (Форма добавления / редактирования) -->
+<div class="modal" id="route-modal">
+    <div class="modal-content">
+        <h2 id="modal-title">Добавить новый рейс</h2>
+        <form id="route-form" class="modal-form">
+            <input type="hidden" id="edit-index">
+            <div class="input-group">
+                <label>Название / Номер поезда</label>
+                <input type="text" id="route-number" placeholder='например, 154Г "Экспресс"' required autocomplete="off">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="input-group">
+                    <label>Время отправления</label>
+                    <input type="text" id="route-departure" placeholder="14:10" required autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <label>Время прибытия</label>
+                    <input type="text" id="route-arrival" placeholder="20:40" required autocomplete="off">
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="input-group">
+                    <label>Время в пути</label>
+                    <input type="text" id="route-duration" placeholder="6ч 30м" required autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <label>Цена (₽)</label>
+                    <input type="number" id="route-price" placeholder="2700" required autocomplete="off">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <!-- ИСПРАВЛЕНО: id приведен к стандарту close-modal_btn -->
+                <button type="button" class="cancel-btn" id="close-modal_btn">Отмена</button>
+                <button type="submit" class="submit-btn" style="height: auto; padding: 10px 20px;">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Исходный массив поездов по умолчанию (если localStorage пуст)
+const defaultTrains = [
+  { number: '016А "Арктика"', departure: '00:45', arrival: '09:15', duration: '8ч 30м', price: 3450 },
+  { number: '742В "Ласточка"', departure: '06:50', arrival: '11:20', duration: '4ч 30м', price: 1890 },
+  { number: '154Г "Экспресс"', departure: '14:10', arrival: '20:40', duration: '6ч 30м', price: 2700 },
+  { number: '032Г "Премиум"', departure: '23:30', arrival: '07:00', duration: '7ч 30м', price: 4200 }
+];
+
+// Получаем актуальный массив из localStorage (общая база с файлом script.js)
+function getTrains() {
+  let appTrains = localStorage.getItem('global_trains');
+  if (!appTrains) {
+    localStorage.setItem('global_trains', JSON.stringify(defaultTrains));
+    return defaultTrains;
+  }
+  return JSON.parse(appTrains);
+}
+
+// Сохраняем измененный массив в localStorage
+function saveTrains(trains) {
+  localStorage.setItem('global_trains', JSON.stringify(trains));
+}
+
+// Элементы DOM
+const tbody = document.getElementById('admin-routes-tbody');
+const modal = document.getElementById('route-modal');
+const routeForm = document.getElementById('route-form');
+
+// 1. ОТРИСОВКА ТАБЛИЦЫ (Вывод списка рейсов и кнопок управления)
+function renderTable() {
+  const trains = getTrains();
+  tbody.innerHTML = '';
+  trains.forEach((train, index) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight: 700; color: var(--primary);">${train.number}</td>
+      <td>${train.departure}</td>
+      <td>${train.arrival}</td>
+      <td>${train.duration}</td>
+      <td style="font-weight: 600;">${train.price} ₽</td>
+      <td>
+        <div class="action-btn-group">
+          <button class="edit-btn" onclick="openEditModal(${index})">Редактировать</button>
+          <button class="delete-btn" onclick="deleteRoute(${index})">Удалить</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// 2. ДОБАВЛЕНИЕ ПОЕЗДА (Открытие модального окна для нового рейса)
+document.getElementById('add-route-btn').addEventListener('click', () => {
+  document.getElementById('modal-title').textContent = "Добавить новый рейс";
+  routeForm.reset();
+  document.getElementById('edit-index').value = ""; // Очищаем индекс
+  modal.classList.add('show');
+});
+
+// Закрытие модального окна по кнопке "Отмена"
+document.getElementById('close-modal_btn').addEventListener('click', () => {
+  modal.classList.remove('show');
+});
+
+// 3. РЕДАКТИРОВАНИЕ ПОЕЗДА (Открытие модального окна с заполненными данными)
+window.openEditModal = function(index) {
+  const trains = getTrains();
+  const train = trains[index];
+  document.getElementById('modal-title').textContent = "Редактировать рейс";
+  document.getElementById('edit-index').value = index; // Запоминаем, какой элемент редактируем
+  document.getElementById('route-number').value = train.number;
+  document.getElementById('route-departure').value = train.departure;
+  document.getElementById('route-arrival').value = train.arrival;
+  document.getElementById('route-duration').value = train.duration;
+  document.getElementById('route-price').value = train.price;
+  modal.classList.add('show');
+}
+
+// Обработка отправки формы (Сохранение изменений / Создание нового рейса)
+routeForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const index = document.getElementById('edit-index').value;
+  const trains = getTrains();
+  const trainData = {
+    number: document.getElementById('route-number').value,
+    departure: document.getElementById('route-departure').value,
+    arrival: document.getElementById('route-arrival').value,
+    duration: document.getElementById('route-duration').value,
+    price: parseInt(document.getElementById('route-price').value, 10)
+  };
+  
+  if (index === "") {
+    // Если индекс пустой — добавляем новый поезд в массив
+    trains.push(trainData);
+  } else {
+    // Если индекс есть — перезаписываем существующий поезд
+    trains[index] = trainData;
+  }
+  
+  saveTrains(trains); // Сохраняем в localStorage
+  renderTable(); // Обновляем таблицу на экране
+  modal.classList.remove('show'); // Закрываем окно
+});
+
+// 4. УДАЛЕНИЕ ПОЕЗДА
+window.deleteRoute = function(index) {
+  if (confirm('Вы уверены, что хотите удалить этот рейс из расписания?')) {
+    const trains = getTrains();
+    trains.splice(index, 1); // Удаляем 1 элемент по индексу
+    saveTrains(trains); // Сохраняем изменения
+    renderTable(); // Перерисовываем таблицу
+  }
+}
+
+// Логика выхода из панели администратора
+document.getElementById('logout-btn').addEventListener('click', () => {
+  localStorage.removeItem('user_session_active');
+  localStorage.removeItem('user_role');
+  window.location.replace('auth.html');
+});
+
+// Первичный рендеринг таблицы при загрузке страницы
+renderTable();
+</script>
+
