@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Служба поддержки — РЖДЭкспресс</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://googleapis.com">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        /* Локальные минималистичные стили для страницы поддержки */
+        .help-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 40px;
+            margin-top: 40px;
+        }
+        .help-info-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.01);
+        }
+        .help-info-card p {
+            font-size: 16px;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .contact-group {
+            margin-bottom: 25px;
+        }
+        .contact-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .contact-sub {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        
+        /* Форма обратной связи */
+        .help-form-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 40px;
+        }
+        .help-form-card h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 25px;
+        }
+        .textarea-group textarea {
+            width: 100%;
+            height: 120px;
+            padding: 14px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            outline: none;
+            background-color: #fafafa;
+            resize: none;
+            transition: var(--transition);
+        }
+        .textarea-group textarea:focus {
+            border-color: var(--primary);
+            background-color: #fff;
+            box-shadow: 0 0 0 3px var(--secondary);
+        }
+
+        @media (max-width: 768px) {
+            .help-layout {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+            .help-info-card, .help-form-card {
+                padding: 25px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Навигация -->
+    <header class="header">
+        <div class="container header-container">
+            <a href="index.html" class="logo"><span>Платформа</span> 9 ¾</a>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Поиск</a>
+                <a href="#" class="nav-link" onclick="goToProfile(event)">Мои билеты</a>
+                <a href="help.html" class="nav-link active">Помощь</a>
+                <a href="#" class="nav-link" onclick="goToProfile(event)">Личный кабинет</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main container">
+        <div class="help-layout">
+            
+            <!-- Левый блок: Информация -->
+            <section class="help-info-card">
+                <h1 style="font-size: 28px; margin-bottom: 12px; font-weight: 700;">Служба поддержки</h1>
+                <p>Наша служба поддержки работает круглосуточно. Поможем с билетами, возвратом и любым вопросом в пути.</p>
+                
+                <div class="contact-group">
+                    <a href="tel:88009759999" class="contact-value">8 800 975 9999</a>
+                    <div class="contact-sub">Бесплатно по России</div>
+                </div>
+
+                <div class="contact-group">
+                    <a href="mailto:help@9-34.ru" class="contact-value" style="font-size: 22px;">help@9-34.ru</a>
+                    <div class="contact-sub">Ответим в течение часа</div>
+                </div>
+            </section>
+
+            <!-- Правый блок: Форма написания -->
+            <section class="help-form-card">
+                <h2>Напишите нам</h2>
+                <form id="support-form">
+                    <div class="input-group" style="margin-bottom: 18px;">
+                        <label for="support-name">Ваше имя</label>
+                        <input type="text" id="support-name" placeholder="Введите ваше имя" required autocomplete="off">
+                    </div>
+
+                    <div class="input-group" style="margin-bottom: 18px;">
+                        <label for="support-email">Email</label>
+                        <input type="email" id="support-email" placeholder="example@mail.ru" required autocomplete="off">
+                    </div>
+
+                    <div class="input-group textarea-group" style="margin-bottom: 24px;">
+                        <label for="support-message">Сообщение</label>
+                        <textarea id="support-message" placeholder="Опишите вашу проблему или задайте вопрос..." required></textarea>
+                    </div>
+
+                    <button type="submit" id="support-submit-btn" class="submit-btn" style="width: 100%;">Отправить</button>
+                </form>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Подключаем скрипт с логикой переходов -->
+    <script src="script.js"></script>
+    <script>
+        // Интерактивная логика отправки обращения
+        document.getElementById('support-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('support-submit-btn');
+            const originalText = submitBtn.textContent;
+            
+            // Визуальный эффект отправки
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Отправка...';
+            submitBtn.style.backgroundColor = 'var(--primary-hover)';
+            
+            setTimeout(() => {
+                alert('Ваше сообщение успешно отправлено! Мы свяжемся с вами в ближайшее время.');
+                
+                // Сбрасываем форму и кнопку
+                this.reset();
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+                submitBtn.style.backgroundColor = 'var(--primary)';
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
