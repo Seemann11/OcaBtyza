@@ -375,3 +375,86 @@ body {
         grid-column: span 1;
     }
 }
+/* ==========================================================================
+   УНИВЕРСАЛЬНЫЕ МЕДИА-ЗАПРОСЫ ДЛЯ СВЕРХМАЛЫХ И МОБИЛЬНЫХ ЭКРАНОВ
+   ========================================================================== */
+
+/* 1. Адаптивность для панели администратора (Admin.html) */
+.admin-table-card {
+    overflow-x: auto; /* Добавляет плавную горизонтальную прокрутку только для таблицы, если она не влезает */
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+    .admin-layout {
+        margin-top: 20px;
+    }
+    .admin-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        text-align: center;
+    }
+    .admin-header h1 {
+        font-size: 22px;
+    }
+    
+    /* Трансформация модальных окон на мобильных */
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+        margin: 10px;
+    }
+}
+
+/* 2. Адаптивность для схемы выбора мест (Script.js / Index.html) */
+@media (max-width: 500px) {
+    /* Сетка мест в вагоне автоматически уменьшается, чтобы не вылезать за экран */
+    #seats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr) !important; /* Делаем по 4 места в ряд вместо длинной строки */
+        gap: 8px !important;
+    }
+    
+    /* Кнопки легенды (Свободно/Занято) выстраиваем вертикально */
+    #seat-selection-section .legend-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+/* 3. Адаптивность шапки и навигации для всех страниц */
+@media (max-width: 600px) {
+    .header-container {
+        flex-direction: column;
+        height: auto !important;
+        padding: 15px 10px !important;
+        gap: 12px;
+    }
+    .nav {
+        gap: 12px !important;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .nav-link {
+        font-size: 14px;
+    }
+}
+
+/* 4. Коррекция форм бронирования и оплаты */
+@media (max-width: 480px) {
+    /* Все двухколоночные мини-гриды (например, срок действия карты и CVC) переводим в 1 колонку */
+    .search-section style, 
+    #checkout-form div[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+    
+    .hero h1 {
+        font-size: 26px !important;
+    }
+    .hero p {
+        font-size: 15px !important;
+    }
+}
